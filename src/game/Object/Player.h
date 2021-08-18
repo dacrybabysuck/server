@@ -2531,8 +2531,9 @@ class Player : public Unit
 
         ActionButtonList m_actionButtons;
         
-        bool m_enableMeritPoints = true;
-        uint32 m_meritPoints;
+        bool m_enableMeritPoints;
+        uint32 m_meritXPThreshold;
+        uint32 m_meritPoints;        
 
         float m_auraBaseMod[BASEMOD_END][MOD_END];
 

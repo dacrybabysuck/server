@@ -443,7 +443,10 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
     m_comboPoints = 0;
 
     m_usedTalentCount = 0;
-    m_meritPoints = 0;
+    
+    m_enableMeritPoints = World.getConfig(CONFIG_BOOL_MERITS_ENABLED);
+    m_meritXPThreshold = World.getConfig(CONFIG_UINT32_MERITS_XP_THRESHOLD);
+    m_meritPoints = 0;    
 
     m_modManaRegen = 0;
     m_modManaRegenInterrupt = 0;
@@ -2774,7 +2777,7 @@ void Player::GiveMeritPoint(uint32 level, uint32 meritPoints)
 
     GetSession()->SendPacket(&data);
 
-    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr.GetXPForLevel(level));
+    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, m_meritXPThreshold);
     
     m_Played_time[PLAYED_TIME_LEVEL] = 0; // Level Played Time reset
     SetMeritPoints(meritPoints);
@@ -2874,8 +2877,15 @@ void Player::InitStatsForLevel(bool reapplyMods)
 
     PlayerLevelInfo info;
     sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), getLevel(), &info);
-
-    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr.GetXPForLevel(getLevel()));
+    
+    if (getlevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && m_enableMeritPoints)
+    {
+        SetUInt32Value(PLAYER_NEXT_LEVEL_XP, m_meritXPThreshold);
+    }
+    else
+    {
+        SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sObjectMgr.GetXPForLevel(getLevel()));
+    }
 
     // reset before any aura state sources (health set/aura apply)
     SetUInt32Value(UNIT_FIELD_AURASTATE, 0);

@@ -947,6 +947,10 @@ void World::LoadConfigSettings(bool reload)
         sEluna->OnConfigLoad(reload);
 #endif /* ENABLE_ELUNA */
     sLog.outString();
+    
+    //METAL SETTINGS
+    setConfig(CONFIG_BOOL_MERITS_ENABLED, "Metal.EnableMerits", false);
+    setConfig(CONFIG_UINT32_MERITS_XP_THRESHOLD, "Metal.MeritXPThreshold", 100000);
 }
 
 /// Initialize the World
