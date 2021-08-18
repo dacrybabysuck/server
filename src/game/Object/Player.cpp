@@ -444,8 +444,6 @@ Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_
 
     m_usedTalentCount = 0;
     
-    m_enableMeritPoints = World.getConfig(CONFIG_BOOL_MERITS_ENABLED);
-    m_meritXPThreshold = World.getConfig(CONFIG_UINT32_MERITS_XP_THRESHOLD);
     m_meritPoints = 0;    
 
     m_modManaRegen = 0;
@@ -2631,7 +2629,7 @@ void Player::GiveXP(uint32 xp, Unit* victim)
 #endif /* ENABLE_ELUNA */
 
     // XP to money conversion processed in Player::RewardQuest
-    if (level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && !m_enableMeritPoints)
+    if (level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && !sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
     {
         return;
     }
@@ -2645,7 +2643,7 @@ void Player::GiveXP(uint32 xp, Unit* victim)
     uint32 nextLvlXP = GetUInt32Value(PLAYER_NEXT_LEVEL_XP);
     uint32 newXP = curXP + xp + rested_bonus_xp;
 
-    while (newXP >= nextLvlXP && (level < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) || m_enableMeritPoints))
+    while (newXP >= nextLvlXP && (level < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) || sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED)))
     {
         newXP -= nextLvlXP;
 
@@ -2653,7 +2651,7 @@ void Player::GiveXP(uint32 xp, Unit* victim)
         {
             GiveLevel(level + 1);
         }
-        else if (level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && m_enableMeritPoints)
+        else if (level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
         {
             GiveMeritPoint(level, GetMeritPoints() + 1);
         }
@@ -2752,34 +2750,34 @@ void Player::GiveLevel(uint32 level)
 
 void Player::GiveMeritPoint(uint32 level, uint32 meritPoints)
 {    
-    PlayerLevelInfo info;
-    sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), level, &info);
+    /*PlayerLevelInfo info;
+    sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), level, &info);*/
 
     PlayerClassLevelInfo classInfo;
     sObjectMgr.GetPlayerClassLevelInfo(getClass(), level, &classInfo);
 
     // send levelup info to client
-    WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4));
-    data << uint32(level);
-    data << uint32((int32(classInfo.basehealth) - int32(GetCreateHealth()))
-        + ((int32(info.stats[STAT_STAMINA]) - GetCreateStat(STAT_STAMINA)) * 10));
-    // for(int i = 0; i < MAX_POWERS; ++i)                  // Powers loop (0-6)
-    data << uint32(int32(classInfo.basemana)   - int32(GetCreateMana()));
+    WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4 + 4));
+    data << uint32(meritPoints);
     data << uint32(0);
     data << uint32(0);
     data << uint32(0);
     data << uint32(0);
-    // end for
-    for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)         // Stats loop (0-4)
-    {
-        data << uint32(int32(info.stats[i]) - GetCreateStat(Stats(i)));
-    }
-
+    data << uint32(0);
+    data << uint32(0);
+    data << uint32(0);
+    data << uint32(0);
+    data << uint32(0);
+    data << uint32(0);
+    data << uint32(0);
+    data << uint32(1);
+    
     GetSession()->SendPacket(&data);
-
-    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, m_meritXPThreshold);
+    
+    SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sWorld.getConfig(CONFIG_UINT32_MERITS_XP_THRESHOLD));
     
     m_Played_time[PLAYED_TIME_LEVEL] = 0; // Level Played Time reset
+    SetLevel(level);
     SetMeritPoints(meritPoints);
     
     SetCreateHealth(classInfo.basehealth);
@@ -2839,6 +2837,11 @@ void Player::UpdateFreeTalentPoints(bool resetIfNeed)
     else
     {
         uint32 talentPointsForLevel = CalculateTalentsPoints();
+        
+        if (sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
+        {
+            talentPointsForLevel += GetMeritPoints();
+        }
 
         // if used more that have then reset
         if (m_usedTalentCount > talentPointsForLevel)
@@ -2878,9 +2881,9 @@ void Player::InitStatsForLevel(bool reapplyMods)
     PlayerLevelInfo info;
     sObjectMgr.GetPlayerLevelInfo(getRace(), getClass(), getLevel(), &info);
     
-    if (getlevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && m_enableMeritPoints)
+    if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
     {
-        SetUInt32Value(PLAYER_NEXT_LEVEL_XP, m_meritXPThreshold);
+        SetUInt32Value(PLAYER_NEXT_LEVEL_XP, sWorld.getConfig(CONFIG_UINT32_MERITS_XP_THRESHOLD));
     }
     else
     {
@@ -6716,7 +6719,7 @@ void Player::CheckAreaExploreAndOutdoor()
         else if (p->area_level > 0)
         {
             uint32 area = p->ID;
-            if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && !m_enableMeritPoints)
+            if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && !sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
             {
                 SendExplorationExperience(area, 0);
             }
@@ -14691,7 +14694,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, Object* questGiver,
     // Used for client inform but rewarded only in case not max level
     uint32 xp = uint32(pQuest->XPValue(this) * sWorld.getConfig(CONFIG_FLOAT_RATE_XP_QUEST));
 
-    if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) || m_enableMeritPoints)
+    if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) || sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
     {
         GiveXP(xp , NULL);
     }
@@ -15963,7 +15966,7 @@ void Player::SendQuestReward(Quest const* pQuest, uint32 XP)
     data << uint32(questid);
     data << uint32(0x03);
 
-    if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) || m_enableMeritPoints)
+    if (getLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) || sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
     {
         data << uint32(XP);
         data << uint32(pQuest->GetRewOrReqMoney());
@@ -16662,7 +16665,6 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         SetPower(Powers(i), savedpower > GetMaxPower(Powers(i)) ? GetMaxPower(Powers(i)) : savedpower);
     }
     
-    SetMeritPoints(fields[55].GetUInt32());
 
     DEBUG_FILTER_LOG(LOG_FILTER_PLAYER_STATS, "The value of player %s after load item and aura is: ", m_name.c_str());
     outDebugStatsValues();
@@ -19530,7 +19532,7 @@ void Player::RemovePetitionsAndSigns(ObjectGuid guid)
 void Player::SetRestBonus(float rest_bonus_new)
 {
     // Prevent resting on max level
-    if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL && !m_enableMeritPoints))
+    if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && !sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
     {
         rest_bonus_new = 0;
     }
@@ -20795,8 +20797,9 @@ void Player::SendInitialPacketsBeforeAddToMap()
     /* This packet seems useless...
      * TODO: Work out if we need SMSG_SET_REST_START */
     WorldPacket data(SMSG_SET_REST_START, 4);
-    data << uint32(0);                                      // unknown, may be rest state time or experience
+    data << uint32(1);                                      // unknown, may be rest state time or experience
     GetSession()->SendPacket(&data);
+    
 
     /* Send information about player's home binding */
     data.Initialize(SMSG_BINDPOINTUPDATE, 5 * 4);
@@ -22416,7 +22419,7 @@ Item* Player::ConvertItem(Item* item, uint32 newItemId)
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 talentPointsForLevel = getLevel() < 10 ? 0 : getLevel() - 9;
-    return uint32((talentPointsForLevel + GetMeritPoints()) * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+    return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 }
 
 struct DoPlayerLearnSpell
