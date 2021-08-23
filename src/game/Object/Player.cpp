@@ -2770,7 +2770,6 @@ void Player::GiveMeritPoint(uint32 level, uint32 meritPoints)
     data << uint32(0);
     data << uint32(0);
     data << uint32(0);
-    data << uint32(1);
     
     GetSession()->SendPacket(&data);
     
@@ -20797,7 +20796,7 @@ void Player::SendInitialPacketsBeforeAddToMap()
     /* This packet seems useless...
      * TODO: Work out if we need SMSG_SET_REST_START */
     WorldPacket data(SMSG_SET_REST_START, 4);
-    data << uint32(1);                                      // unknown, may be rest state time or experience
+    data << uint32(0);                                      // unknown, may be rest state time or experience
     GetSession()->SendPacket(&data);
     
 
@@ -20878,6 +20877,26 @@ void Player::SendInitialPacketsAfterAddToMap()
     /* Must be called after loading the map */
     SendEnchantmentDurations();
     SendItemDurations();
+    
+    if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
+    {
+        // Trick Client to show XP Bar by sending a level up packet that does nothing.
+        WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4 + 4));
+        data << uint32(GetMeritPoints());
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        data << uint32(0);
+        
+        GetSession()->SendPacket(&data);
+    }
 }
 
 void Player::SendUpdateToOutOfRangeGroupMembers()
