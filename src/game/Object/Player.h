@@ -1006,6 +1006,17 @@ class Player : public Unit
         {
             return m_social;
         }
+        
+        void SetMeritPoints(uint32 meritPoints)
+        {
+            m_meritPoints = meritPoints;
+        }
+        
+        uint32 GetMeritPoints()
+        {
+            return m_meritPoints;
+        }
+        
 
         PlayerTaxi m_taxi;
         void InitTaxiNodes()
@@ -1066,6 +1077,7 @@ class Player : public Unit
 
         void GiveXP(uint32 xp, Unit* victim);
         void GiveLevel(uint32 level);
+        void GiveMeritPoint(uint32 level, uint32 meritPoints);
 
         void InitStatsForLevel(bool reapplyMods = false);
 
@@ -2518,6 +2530,8 @@ class Player : public Unit
         GlobalCooldownMgr m_GlobalCooldownMgr;
 
         ActionButtonList m_actionButtons;
+        
+        uint32 m_meritPoints;        
 
         float m_auraBaseMod[BASEMOD_END][MOD_END];
 

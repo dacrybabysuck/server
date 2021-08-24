@@ -1758,3 +1758,20 @@ Warden.DBLogLevel            = 0
 Eluna.Enabled    = 1
 Eluna.TraceBack  = false
 Eluna.ScriptPath = "lua_scripts"
+
+###################################################################################################################
+#  METAL SETTINGS
+#
+#   Metal.EnableMerits
+#       Enables Merit System, grants a talent point after reaching an xp threshold
+#       Default:    false
+#                   true
+#
+#   Metal.MeritXPThreshold
+#       Description: Sets XP required per merit point
+#       Default:     100000
+#
+###################################################################################################################
+
+Metal.EnableMerits     = false
+Metal.MeritXPThreshold = 100000
