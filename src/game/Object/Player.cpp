@@ -2757,7 +2757,7 @@ void Player::GiveMeritPoint(uint32 level, uint32 meritPoints)
     sObjectMgr.GetPlayerClassLevelInfo(getClass(), level, &classInfo);
 
     // send levelup info to client
-    WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4 + 4));
+    WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4));
     data << uint32(meritPoints);
     data << uint32(0);
     data << uint32(0);
@@ -20837,6 +20837,7 @@ void Player::SendInitialPacketsBeforeAddToMap()
 
 void Player::SendInitialPacketsAfterAddToMap()
 {
+    
     /* Update players zone */
     uint32 newzone, newarea;
     GetZoneAndAreaId(newzone, newarea);
@@ -20878,25 +20879,6 @@ void Player::SendInitialPacketsAfterAddToMap()
     SendEnchantmentDurations();
     SendItemDurations();
     
-    if (getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
-    {
-        // Trick Client to show XP Bar by sending a level up packet that does nothing.
-        WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4 + 4));
-        data << uint32(GetMeritPoints());
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        
-        GetSession()->SendPacket(&data);
-    }
 }
 
 void Player::SendUpdateToOutOfRangeGroupMembers()
