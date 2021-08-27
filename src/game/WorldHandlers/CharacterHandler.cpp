@@ -770,26 +770,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     /* Send packets that must be sent only after player is added to the map */
     pCurrChar->SendInitialPacketsAfterAddToMap();
-    
-    if (pCurrChar->getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) && sWorld.getConfig(CONFIG_BOOL_MERITS_ENABLED))
-    {
-        // Trick Client to show XP Bar by sending a level up packet that does nothing.
-        WorldPacket data(SMSG_LEVELUP_INFO, (4 + 4 + MAX_POWERS * 4 + MAX_STATS * 4));
-        data << uint32(pCurrChar->GetMeritPoints());
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        
-        pCurrChar->GetSession()->SendPacket(&data);
-    }
 
     /* Mark player as online in the database */
     static SqlStatementID updChars;
