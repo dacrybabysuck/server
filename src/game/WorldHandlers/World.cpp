@@ -272,7 +272,7 @@ World::AddSession_(WorldSession* s)
         --Sessions;
     }
 
-    if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity() == SEC_PLAYER)
+    if (pLimit > 0 && Sessions >= pLimit && s->GetSecurity() == SEC_PLAYER && !getConfig(CONFIG_BOOL_MERITS_ENABLED))
     {
         AddQueuedSession(s);
         UpdateMaxSessionCounters();
